@@ -1,0 +1,7 @@
+
+config 'experiment' 'wifi_beacons'
+	option 'display_name' 'Wifi Beacons'
+	option 'description' 'Wifi Beacons collects data about the devices connected to your BISmark router over wireless, as well as the presence of other nearby wireless access points. <b>Wifi Beacons does not collect the contents of your network traffic.</b>'
+	list 'packages' 'wifi_beacons-tmpfs'
+	list 'packages' 'bismark-data-uploader'
+
