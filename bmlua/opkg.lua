@@ -20,7 +20,7 @@ local NEVER_REMOVE = {'libc', 'uclibcxx'}
 -- LOCAL (PRIVATE) FUNCTIONS
 ------------------------------------------------------------------------------
 
-local shell_escape = function(s)
+local shell_escape = function (s)
     return string.gsub(s, '(' .. BAD_SHELL_CHARS .. ')', '\\%1')
 end
 
@@ -83,19 +83,19 @@ function info(pkg)
     local status = {available = false}
     local out = opkg_cmd_stdout('info', pkg)
     if #out > 0 then
-        status['available'] = true
-        status['depends'] = {}
+        status.available = true
+        status.depends = {}
         for k,v in pairs(out) do
             if v:match("^Status: ") then
-                status['installed'] = ((v:match('%s+installed%s+') ~= nil) or
-                                       (v:match('%s+installed$') ~= nil))
+                status.installed = ((v:match('%s+installed%s+') ~= nil) or
+                                    (v:match('%s+installed$') ~= nil))
             elseif v:match("^Version: ") then
-                status['version'] = v:match('^Version: ([^%s]+)')
+                status.version = v:match('^Version: ([^%s]+)')
             elseif v:match("^Installed%-Time: ") then
-                status['installed-time'] = v:match('^Installed%-Time: ([^%s]+)')
+                status.installed-time = v:match('^Installed%-Time: ([^%s]+)')
             elseif v:match("^Depends: ") then
                 local depstr = v:sub(9)
-                status['depends'] = bmlua.str.split(depstr, ', ', false)
+                status.depends = bmlua.str.split(depstr, ', ', false)
             end
         end
     end
@@ -103,7 +103,7 @@ function info(pkg)
 end
 
 function install(pkg, dry_run)
-    local deps = info(pkg)['depends']
+    local deps = info(pkg).depends
     assert(deps ~= nil)
     for k,v in pairs(deps) do
         install(v, dry_run)

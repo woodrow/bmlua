@@ -106,9 +106,9 @@ function update_local_experiment_list(config, local_uci, remote_uci)
         else
             pdebug("Updating local experiment %q.\n", ename)
         end
-        local_uci:set(config, ename, 'packages', exp['packages'])
-        local_uci:set(config, ename, 'description', exp['description'])
-        local_uci:set(config, ename, 'display_name', exp['display_name'])
+        local_uci:set(config, ename, 'packages', exp.packages)
+        local_uci:set(config, ename, 'description', exp.description)
+        local_uci:set(config, ename, 'display_name', exp.display_name)
         -- TODO: This update process ignores (will not uninstall) packages that
         --       are initially on the local package list but not on the remote
         --       package list. Perhaps these should be collected in a
@@ -120,8 +120,8 @@ function update_local_experiment_list(config, local_uci, remote_uci)
     for ename,exp in pairs(loc_exps) do
         if rem_exps[ename] == nil then
             local_uci:set(config, ename, 'available', UCI_FALSE)
-            for i,pname in pairs(exp['packages']) do
-                if not opkg.info(pname)['installed'] then
+            for i,pname in pairs(exp.packages) do
+                if not opkg.info(pname).installed then
                     local_uci:set(config, ename, 'installed', UCI_FALSE)
                     pdebug("Marking experiment %q as not installed because " ..
                             "one of its packages %q is not installed.\n",
@@ -145,15 +145,15 @@ function make_packages_consistent(config, local_uci)
     local loc_exps = local_uci:get_all(config)
 
     for ename,exp in pairs(loc_exps) do
-        for i,pname in pairs(exp['packages']) do
+        for i,pname in pairs(exp.packages) do
             if (uci_bool(local_uci:get(config, ename, 'installed')) and
-                    not opkg.info(pname)['installed']) then
+                    not opkg.info(pname).installed) then
                 pdebug("Installing package %q.\n", pname)
                 -- TODO: error handling
                 opkg.install(pname)
 
             elseif (not uci_bool(local_uci:get(config, ename, 'installed')) and
-                    opkg.info(pname)['installed']) then
+                    opkg.info(pname).installed) then
                 if (opkg.depends_on(pname) ~= nil and
                         #opkg.depends_on(pname) == 0) then
                     pdebug("Removing package %q.\n", pname)

@@ -1,7 +1,7 @@
 module(..., package.seeall);
 
 function islice(t, first, last)
-    local slice = {}  -- TODO should this be nil instead?
+    local slice = {}
     if first > 0 and last <= #t then
         for i=first,last do
             slice[#slice + 1] = t[i]
@@ -11,8 +11,6 @@ function islice(t, first, last)
 end
 
 function print(t, indent)
-    -- call as print_pairs({table=local_uci.get_all('network')})
-    --      or print_pairs({table=io})
     if indent == nil then
        indent = ""
     end
