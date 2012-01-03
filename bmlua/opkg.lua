@@ -92,7 +92,7 @@ function info(pkg)
             elseif v:match("^Version: ") then
                 status.version = v:match('^Version: ([^%s]+)')
             elseif v:match("^Installed%-Time: ") then
-                status.installed-time = v:match('^Installed%-Time: ([^%s]+)')
+                status.installed_time = v:match('^Installed%-Time: ([^%s]+)')
             elseif v:match("^Depends: ") then
                 local depstr = v:sub(9)
                 status.depends = bmlua.str.split(depstr, ', ', false)
