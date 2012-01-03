@@ -8,18 +8,15 @@ require('uci')
 -- BISMARK (BMLUA) MODULES
 require('bmlua.path')
 path = bmlua.path
-require('bmlua.opkg')
-opkg = bmlua.opkg
 -- `require('foo.bar'); bar = foo.bar;`
 -- is the equivalent of python's `import foo.bar as bar`
 
 ------------------------------------------------------------------------------
 -- GLOBALS
 ------------------------------------------------------------------------------
-DEBUG = true
 UCI_DIR = '/etc/config'
-UCI_DIR = 'etc_config'
 UCI_CONFIG = 'bismark-experiments'
+DEBUG = true
 
 ------------------------------------------------------------------------------
 -- CONSTANTS
@@ -61,6 +58,9 @@ function main(arg)
         os.exit(1)
     end
 
+    if DEBUG ~= nil and DEBUG == true then
+        UCI_DIR = 'etc_config'
+    end
     local_fullpath = path.abspath(path.join(UCI_DIR, UCI_CONFIG))
     local_dirpath = path.dirname(local_fullpath)
     local_filename = path.basename(local_fullpath)
@@ -80,15 +80,9 @@ function main(arg)
         local_uci = uci.cursor()
     end
 
-    --if DEBUG then
-    --    init_be_local_uci(local_uci)
-    --    init_be_remote_uci(remote_uci, filename)
-    --end
-
     update_local_experiment_list(UCI_CONFIG, local_uci, remote_uci)
     local_uci:save(UCI_CONFIG)
     local_uci:commit(UCI_CONFIG)
-    make_packages_consistent(UCI_CONFIG, local_uci)
 end
 
 
@@ -106,13 +100,9 @@ function update_local_experiment_list(config, local_uci, remote_uci)
         else
             pdebug("Updating local experiment %q.\n", ename)
         end
-        local_uci:set(config, ename, 'packages', exp.packages)
         local_uci:set(config, ename, 'description', exp.description)
         local_uci:set(config, ename, 'display_name', exp.display_name)
-        -- TODO: This update process ignores (will not uninstall) packages that
-        --       are initially on the local package list but not on the remote
-        --       package list. Perhaps these should be collected in a
-        --       'discarded packages' table?
+        local_uci:set(config, ename, 'packages', exp.packages)
     end
 
     -- Remove experiments not found in remote config file
@@ -120,15 +110,6 @@ function update_local_experiment_list(config, local_uci, remote_uci)
     for ename,exp in pairs(loc_exps) do
         if rem_exps[ename] == nil then
             local_uci:set(config, ename, 'available', UCI_FALSE)
-            for i,pname in pairs(exp.packages) do
-                if not opkg.info(pname).installed then
-                    local_uci:set(config, ename, 'installed', UCI_FALSE)
-                    pdebug("Marking experiment %q as not installed because " ..
-                            "one of its packages %q is not installed.\n",
-                            ename, pname)
-                    break
-                end
-            end
             if not uci_bool(local_uci:get(config, ename, 'installed')) then
                 exps_to_delete[#exps_to_delete + 1] = ename
             end
@@ -141,30 +122,8 @@ function update_local_experiment_list(config, local_uci, remote_uci)
 end
 
 
-function make_packages_consistent(config, local_uci)
-    local loc_exps = local_uci:get_all(config)
-
-    for ename,exp in pairs(loc_exps) do
-        for i,pname in pairs(exp.packages) do
-            if (uci_bool(local_uci:get(config, ename, 'installed')) and
-                    not opkg.info(pname).installed) then
-                pdebug("Installing package %q.\n", pname)
-                -- TODO: error handling
-                opkg.install(pname)
-
-            elseif (not uci_bool(local_uci:get(config, ename, 'installed')) and
-                    opkg.info(pname).installed) then
-                if (opkg.depends_on(pname) ~= nil and
-                        #opkg.depends_on(pname) == 0) then
-                    pdebug("Removing package %q.\n", pname)
-                    opkg.remove(pname)
-                end
-            end
-        end
-    end
-end
-
 function uci_bool(s)
+    -- interpret the many ways true or false can be expressed in UCI.
     local retval = nil
     s = s:lower()
     if s == 'true' or s == '1' or s == 'yes' then
@@ -187,6 +146,7 @@ end
 -- TESTING STUFF
 ------------------------------------------------------------------------------
 function init_be_remote_uci(uci_cursor, filename)
+    -- initialize remote bismark-experiments config file with reasonable values
     local success = true
     local config_name = filename
     local sec_name = 'wifi_beacons'
@@ -210,14 +170,15 @@ end
 
 
 function init_be_local_uci(uci_cursor)
+    -- initialize local bismark-experiments config file with reasonable values
     local success = true
     local config_name = 'bismark-experiments'
     local sec_name = 'wifi_beacons'
     init_be_remote_uci(uci_cursor, config_name)
     success = success and uci_cursor:set(config_name, sec_name,
-            'installed', 'yes')
+            'installed', UCI_TRUE)
     success = success and uci_cursor:set(config_name, sec_name,
-            'available', 'yes')
+            'available', UCI_TRUE)
     if success then
         uci_cursor:commit(config_name)
     else
