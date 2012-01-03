@@ -47,11 +47,6 @@ function main(arg)
     remote_fullpath = path.abspath(arg[1])
     remote_dirpath = path.dirname(remote_fullpath)
     remote_filename = path.basename(remote_fullpath)
-    if not path.exists(remote_dirpath) then
-        print(string.format("Remote experiment config directory %q not found",
-                remote_dirpath))
-        os.exit(1)
-    end
     if not path.exists(remote_fullpath) then
         print(string.format("Remote experiment UCI file %q not found",
                 remote_fullpath))
